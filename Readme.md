@@ -1,1 +1,1 @@
-kokodio.github.io
+<https://kokodio.github.io/SSIM-PSNR-Online-Calc/>
