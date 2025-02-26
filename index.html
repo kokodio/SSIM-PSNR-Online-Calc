@@ -125,13 +125,6 @@
             margin: 10px 0;
             display: none;
         }
-        .tips {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #eaf7ff;
-            border-left: 4px solid #3498db;
-            border-radius: 4px;
-        }
         .advanced-settings {
             margin-top: 20px;
             padding: 15px;
@@ -168,12 +161,6 @@
         .checkbox-group input {
             margin-right: 8px;
         }
-        footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #7f8c8d;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
@@ -200,10 +187,10 @@
             <h3>Настройки SSIM</h3>
             <div class="form-group">
                 <label for="win-size">Размер окна:</label>
-                <input type="number" id="win-size" class="form-control" value="11" min="3" max="21" step="2">
+                <input type="number" id="win-size" class="form-control" value="7" min="3" max="21" step="2">
             </div>
             <div class="checkbox-group">
-                <input type="checkbox" id="gaussian-weights" checked>
+                <input type="checkbox" id="gaussian-weights">
                 <label for="gaussian-weights">Использовать гауссовы веса</label>
             </div>
             <div class="form-group">
@@ -238,16 +225,6 @@
                 <p>Измеряет отношение сигнал/шум в дБ (выше = лучше)</p>
                 <div class="metric-value" id="psnr-value">-</div>
             </div>
-        </div>
-        
-        <div class="tips">
-            <h3>Информация:</h3>
-            <ul>
-                <li>Реализация SSIM соответствует <code>skimage.metrics.structural_similarity</code></li>
-                <li>Для RGB-изображений вычисляется среднее значение SSIM по каналам</li>
-                <li>По умолчанию используются параметры оригинальной статьи Wang et al. 2004</li>
-                <li>Расчёты выполняются локально в вашем браузере</li>
-            </ul>
         </div>
     </div>
 
