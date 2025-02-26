@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор SSIM и PSNR</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .upload-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .upload-box {
+            flex: 1;
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .upload-box:hover {
+            border-color: #2980b9;
+            background-color: #f8f9fa;
+        }
+        .upload-box img {
+            max-width: 100%;
+            max-height: 180px;
+            margin-top: 10px;
+        }
+        .upload-box p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .upload-box input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            display: none;
+        }
+        .metric {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .metric h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        .metric p {
+            margin: 5px 0 0;
+            font-size: 15px;
+            color: #555;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2980b9;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+        }
+        .tips {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #eaf7ff;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .advanced-settings {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .advanced-settings h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #555;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .checkbox-group input {
+            margin-right: 8px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Калькулятор SSIM и PSNR</h1>
+        
+        <div class="upload-section">
+            <div class="upload-box" id="image1-box">
+                <p>Перетащите или выберите первое изображение</p>
+                <input type="file" id="image1" accept="image/*">
+                <img id="preview1" style="display: none;">
+            </div>
+            
+            <div class="upload-box" id="image2-box">
+                <p>Перетащите или выберите второе изображение</p>
+                <input type="file" id="image2" accept="image/*">
+                <img id="preview2" style="display: none;">
+            </div>
+        </div>
+        
+        <div class="error" id="error-message"></div>
+        
+        <div class="advanced-settings">
+            <h3>Настройки SSIM</h3>
+            <div class="form-group">
+                <label for="win-size">Размер окна:</label>
+                <input type="number" id="win-size" class="form-control" value="11" min="3" max="21" step="2">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="gaussian-weights" checked>
+                <label for="gaussian-weights">Использовать гауссовы веса</label>
+            </div>
+            <div class="form-group">
+                <label for="sigma">Сигма (для гауссовых весов):</label>
+                <input type="number" id="sigma" class="form-control" value="1.5" min="0.5" max="3.0" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="k1">K1:</label>
+                <input type="number" id="k1" class="form-control" value="0.01" min="0.001" max="0.1" step="0.001">
+            </div>
+            <div class="form-group">
+                <label for="k2">K2:</label>
+                <input type="number" id="k2" class="form-control" value="0.03" min="0.001" max="0.1" step="0.001">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="use-sample-covariance">
+                <label for="use-sample-covariance">Использовать выборочную ковариацию (N-1)</label>
+            </div>
+        </div>
+        
+        <button class="btn" id="calculate-btn" disabled>Рассчитать метрики</button>
+        
+        <div class="results" id="results">
+            <div class="metric">
+                <h3>SSIM (Structural Similarity Index)</h3>
+                <p>Измеряет структурное сходство между изображениями (1.0 = идентичные)</p>
+                <div class="metric-value" id="ssim-value">-</div>
+            </div>
+            
+            <div class="metric">
+                <h3>PSNR (Peak Signal-to-Noise Ratio)</h3>
+                <p>Измеряет отношение сигнал/шум в дБ (выше = лучше)</p>
+                <div class="metric-value" id="psnr-value">-</div>
+            </div>
+        </div>
+        
+        <div class="tips">
+            <h3>Информация:</h3>
+            <ul>
+                <li>Реализация SSIM соответствует <code>skimage.metrics.structural_similarity</code></li>
+                <li>Для RGB-изображений вычисляется среднее значение SSIM по каналам</li>
+                <li>По умолчанию используются параметры оригинальной статьи Wang et al. 2004</li>
+                <li>Расчёты выполняются локально в вашем браузере</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Предварительный просмотр загруженных изображений
+        function setupImagePreview(inputId, previewId, boxId) {
+            const input = document.getElementById(inputId);
+            const preview = document.getElementById(previewId);
+            const box = document.getElementById(boxId);
+            
+            input.addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                        box.querySelector('p').style.display = 'none';
+                    }
+                    reader.readAsDataURL(file);
+                    checkEnableButton();
+                }
+            });
+        }
+        
+        setupImagePreview('image1', 'preview1', 'image1-box');
+        setupImagePreview('image2', 'preview2', 'image2-box');
+        
+        // Проверка доступности кнопки расчета
+        function checkEnableButton() {
+            const image1 = document.getElementById('image1').files[0];
+            const image2 = document.getElementById('image2').files[0];
+            const calculateBtn = document.getElementById('calculate-btn');
+            
+            calculateBtn.disabled = !(image1 && image2);
+        }
+        
+        // Создание гауссового ядра
+        function gaussianWindow(size, sigma) {
+            const window = new Array(size);
+            const center = Math.floor(size / 2);
+            
+            for (let i = 0; i < size; i++) {
+                window[i] = new Array(size);
+                for (let j = 0; j < size; j++) {
+                    const x = i - center;
+                    const y = j - center;
+                    window[i][j] = Math.exp(-(x*x + y*y) / (2.0 * sigma * sigma));
+                }
+            }
+            
+            // Нормализация
+            let windowSum = 0;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    windowSum += window[i][j];
+                }
+            }
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    window[i][j] /= windowSum;
+                }
+            }
+            
+            return window;
+        }
+        
+        // Функция свертки для применения окна к образцу изображения
+        function convolve(patch, window, size) {
+            let result = 0;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    result += patch[i][j] * window[i][j];
+                }
+            }
+            return result;
+        }
+        
+        // Расчет средневзвешенного значения для патча
+        function weightedMean(patch, window, size) {
+            return convolve(patch, window, size);
+        }
+        
+        // Расчет взвешенной дисперсии для патча
+        function weightedVariance(patch, window, size, mean) {
+            let result = 0;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    result += window[i][j] * Math.pow(patch[i][j] - mean, 2);
+                }
+            }
+            return result;
+        }
+        
+        // Расчет взвешенной ковариации для двух патчей
+        function weightedCovariance(patch1, patch2, window, size, mean1, mean2) {
+            let result = 0;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    result += window[i][j] * (patch1[i][j] - mean1) * (patch2[i][j] - mean2);
+                }
+            }
+            return result;
+        }
+        
+        // Функция расчета SSIM для патчей
+        function ssimForPatches(patch1, patch2, window, size, c1, c2, useSampleCovariance) {
+            // Расчет среднего значения
+            const mu1 = weightedMean(patch1, window, size);
+            const mu2 = weightedMean(patch2, window, size);
+            
+            // Расчет дисперсии и ковариации
+            let sigma1Sq = weightedVariance(patch1, window, size, mu1);
+            let sigma2Sq = weightedVariance(patch2, window, size, mu2);
+            let sigma12 = weightedCovariance(patch1, patch2, window, size, mu1, mu2);
+            
+            // Если используем выборочную ковариацию
+            if (useSampleCovariance) {
+                let sum = 0;
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        sum += window[i][j];
+                    }
+                }
+                const n = sum;
+                const nMinusOne = n - 1;
+                sigma1Sq = (sigma1Sq * n) / nMinusOne;
+                sigma2Sq = (sigma2Sq * n) / nMinusOne;
+                sigma12 = (sigma12 * n) / nMinusOne;
+            }
+            
+            // Формула SSIM из статьи
+            const numerator = (2 * mu1 * mu2 + c1) * (2 * sigma12 + c2);
+            const denominator = (mu1 * mu1 + mu2 * mu2 + c1) * (sigma1Sq + sigma2Sq + c2);
+            
+            return numerator / denominator;
+        }
+        
+        // Функция для извлечения патча
+        function extractPatch(data, width, height, x, y, size, channel) {
+            const patch = new Array(size);
+            const halfSize = Math.floor(size / 2);
+            
+            for (let i = 0; i < size; i++) {
+                patch[i] = new Array(size);
+                for (let j = 0; j < size; j++) {
+                    // Обеспечиваем отражение на границах
+                    let ni = Math.min(Math.max(y + i - halfSize, 0), height - 1);
+                    let nj = Math.min(Math.max(x + j - halfSize, 0), width - 1);
+                    
+                    const idx = (ni * width + nj) * 4 + channel;
+                    patch[i][j] = data[idx];
+                }
+            }
+            
+            return patch;
+        }
+        
+        // Основная функция расчета SSIM
+        function calculateSSIM(img1Data, img2Data, width, height) {
+            // Получаем параметры из формы
+            const winSize = parseInt(document.getElementById('win-size').value);
+            const gaussianWeights = document.getElementById('gaussian-weights').checked;
+            const sigma = parseFloat(document.getElementById('sigma').value);
+            const k1 = parseFloat(document.getElementById('k1').value);
+            const k2 = parseFloat(document.getElementById('k2').value);
+            const useSampleCovariance = document.getElementById('use-sample-covariance').checked;
+            
+            // Определяем окно
+            let window;
+            if (gaussianWeights) {
+                window = gaussianWindow(winSize, sigma);
+            } else {
+                // Равномерное окно, если не используем гауссовы веса
+                window = new Array(winSize);
+                for (let i = 0; i < winSize; i++) {
+                    window[i] = new Array(winSize);
+                    for (let j = 0; j < winSize; j++) {
+                        window[i][j] = 1.0 / (winSize * winSize);
+                    }
+                }
+            }
+            
+            // Константы для стабилизации
+            const L = 255;
+            const c1 = Math.pow(k1 * L, 2);
+            const c2 = Math.pow(k2 * L, 2);
+            
+            // Шаг сканирования - используем центральные пиксели
+            const numChannels = 3; // RGB
+            let mssimSum = 0;
+            
+            // Для каждого канала RGB
+            for (let channel = 0; channel < numChannels; channel++) {
+                let ssimSum = 0;
+                let numPatches = 0;
+                
+                // Ядро сдвигается с шагом равным половине размера окна
+                for (let y = 0; y < height; y += Math.floor(winSize / 2)) {
+                    for (let x = 0; x < width; x += Math.floor(winSize / 2)) {
+                        const patch1 = extractPatch(img1Data, width, height, x, y, winSize, channel);
+                        const patch2 = extractPatch(img2Data, width, height, x, y, winSize, channel);
+                        
+                        const ssimValue = ssimForPatches(patch1, patch2, window, winSize, c1, c2, useSampleCovariance);
+                        ssimSum += ssimValue;
+                        numPatches++;
+                    }
+                }
+                
+                // Среднее SSIM для канала
+                const channelMssim = ssimSum / numPatches;
+                mssimSum += channelMssim;
+            }
+            
+            // Среднее SSIM по всем каналам
+            return mssimSum / numChannels;
+        }
+        
+        // Функция для вычисления PSNR
+        function calculatePSNR(img1Data, img2Data) {
+            let mse = 0;
+            
+            for (let i = 0; i < img1Data.length; i += 4) {
+                // Вычисление MSE отдельно для каждого канала
+                const diffR = img1Data[i] - img2Data[i];
+                const diffG = img1Data[i+1] - img2Data[i+1];
+                const diffB = img1Data[i+2] - img2Data[i+2];
+                
+                mse += (diffR**2 + diffG**2 + diffB**2) / 3;
+            }
+            
+            mse /= (img1Data.length / 4);
+            
+            if (mse === 0) {
+                return Infinity; // Если изображения идентичны
+            }
+            
+            // Формула PSNR
+            return 10 * Math.log10(255 * 255 / mse);
+        }
+        
+        // Обработчик нажатия кнопки
+        document.getElementById('calculate-btn').addEventListener('click', function() {
+            const image1File = document.getElementById('image1').files[0];
+            const image2File = document.getElementById('image2').files[0];
+            
+            if (!image1File || !image2File) {
+                return;
+            }
+            
+            const img1 = new Image();
+            const img2 = new Image();
+            
+            img1.onload = function() {
+                img2.onload = function() {
+                    // Проверка размеров
+                    if (img1.width !== img2.width || img1.height !== img2.height) {
+                        const errorMsg = document.getElementById('error-message');
+                        errorMsg.textContent = 'Ошибка: изображения должны иметь одинаковые размеры';
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                    
+                    document.getElementById('error-message').style.display = 'none';
+                    
+                    // Создание канваса для обработки изображений
+                    const canvas1 = document.createElement('canvas');
+                    const canvas2 = document.createElement('canvas');
+                    
+                    canvas1.width = img1.width;
+                    canvas1.height = img1.height;
+                    canvas2.width = img2.width;
+                    canvas2.height = img2.height;
+                    
+                    const ctx1 = canvas1.getContext('2d');
+                    const ctx2 = canvas2.getContext('2d');
+                    
+                    ctx1.drawImage(img1, 0, 0);
+                    ctx2.drawImage(img2, 0, 0);
+                    
+                    const imgData1 = ctx1.getImageData(0, 0, canvas1.width, canvas1.height).data;
+                    const imgData2 = ctx2.getImageData(0, 0, canvas2.width, canvas2.height).data;
+                    
+                    // Вычисление метрик
+                    const ssim = calculateSSIM(imgData1, imgData2, canvas1.width, canvas1.height);
+                    const psnr = calculatePSNR(imgData1, imgData2);
+                    
+                    // Отображение результатов
+                    document.getElementById('ssim-value').textContent = ssim.toFixed(4);
+                    document.getElementById('psnr-value').textContent = psnr.toFixed(2) + ' дБ';
+                    document.getElementById('results').style.display = 'block';
+                };
+                
+                img2.src = URL.createObjectURL(image2File);
+            };
+            
+            img1.src = URL.createObjectURL(image1File);
+        });
+    </script>
+</body>
+</html>
